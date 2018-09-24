@@ -11,19 +11,27 @@ class MoviesController < ApplicationController
   end
 
   def index
-   @movies = Movie.order(params[:sort_by])
-   
-   if params[:ratings]
-     @movies = Movie.where(:rating => params[:ratings].keys)
-   end
-   
-   @sort_column = params[:sort_by]
-   
-   @all_ratings=Movie.all_ratings
-   @set_ratings= params[:ratings]
-   if !@set_ratings
-     @set_ratings =Hash.new
-   end
+    
+   @all_ratings = Movie.ratings
+
+    #Initial setting up of sessions
+    session[:ratings] ||= @all_ratings
+    session[:sort] ||= 'id'
+
+    @title_hilite = session[:title_hilite] = "hilite" if params[:sort] == 'title'
+    @date_hilite = session[:date_hilite] = "hilite" if params[:sort] == 'release_date'
+
+    #Remembering the user's preferences
+    session[:ratings] = params[:ratings].keys if params[:ratings]
+    session[:sort] = params[:sort] if params[:sort]
+
+    #to preserve restfulness
+    redirect_to movies_path(ratings: Hash[session[:ratings].map {|r| [r,1]}], sort: session[:sort]) if  params[:ratings].nil? || params[:sort].nil?
+
+    @ratings = session[:ratings]
+    @sort = session[:sort]
+
+    @movies = Movie.where(rating: @ratings).order(@sort)
    
   end
 
